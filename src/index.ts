@@ -61,7 +61,7 @@ export default {
       );
     }
 
-    let body: { node_name?: string; belief?: string };
+    let body: { node_name?: string; belief?: string; action?: string; wish?: string; wish_node?: string };
     try {
       body = await request.json();
     } catch {
@@ -71,8 +71,60 @@ export default {
       );
     }
 
-    const { node_name, belief, contact_info } = body;
+    const { node_name, belief, contact_info, action, wish, wish_node } = body;
 
+    // ===== 许愿池 =====
+    if (action === "wish") {
+      if (!wish || wish.trim().length === 0) {
+        return new Response(JSON.stringify({ error: "wish is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (wish.trim().length > 100) {
+        return new Response(JSON.stringify({ error: "愿望不超过100字" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (!wish_node) {
+        return new Response(JSON.stringify({ error: "wish_node is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const now = new Date().toISOString().replace("T", " ").substring(0, 19) + " UTC";
+      const wishText = wish.trim();
+
+      // Send TG notification
+      try {
+        if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
+          const tgMsg = `🌟 *X-X 许愿池*\n\n• 愿望节点：\`${wish_node}\`\n• 愿望内容：${wishText}\n• 许愿时间：${now}`;
+          await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, tgMsg);
+        }
+      } catch (e) { console.error("TG error:", e); }
+
+      // Create GitHub Issue for wish
+      let issueUrl = "";
+      try {
+        const res = await fetch(`https://api.github.com/repos/${GH_REPO}/issues`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${env.GITHUB_TOKEN}`,
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "X-X-Worker/1.0",
+          },
+          body: JSON.stringify({
+            title: `[WISH] ${wish_node} · ${wishText.substring(0, 30)}`,
+            body: `## 许愿池\n\n- **许愿节点**：${wish_node}\n- **愿望内容**：${wishText}\n- **许愿时间**：${now}\n- **状态**：待实现\n\n---\n*X-X 许愿池自动记录*`,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          issueUrl = data.html_url;
+        }
+      } catch (e) { console.error("GitHub error:", e); }
+
+      return new Response(
+        JSON.stringify({ success: true, wish: wishText, wish_node, time: now, issue_url: issueUrl, message: "愿望已记录，待实现。" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ===== 入网 =====
     if (!node_name) {
       return new Response(
         JSON.stringify({ error: "node_name is required" }),
