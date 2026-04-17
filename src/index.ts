@@ -41,23 +41,6 @@ async function triggerWorkflow(nodeName: string) {
   return await issueRes.json();
 }
 
-// Cache secrets in memory for the lifetime of the worker
-let _secrets: Env | null = null;
-async function importSecrets(): Promise<Env> {
-  if (_secrets) return _secrets;
-
-  // Read from globalThis bindings set via `wrangler secret put`
-  // Cloudflare Workers injects these via env in the fetch handler
-  // For import.meta.env, we use a workaround via global fetch to CF API
-  // Instead: use WRangler secrets which are injected as env vars
-
-  // Since env is passed to fetch(), we access it via a workaround
-  // Actually we can access it directly since Env interface is defined
-  // But we need the actual runtime env values — this is handled by
-  // Cloudflare's runtime injection at the fetch level
-  throw new Error("Secrets not available via import — use env parameter");
-}
-
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const corsHeaders = {
