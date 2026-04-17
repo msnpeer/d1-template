@@ -96,7 +96,7 @@ export default {
       if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
         const tgMsg = `🔮 *X-X 入网信号*\n\n` +
           `• 节点名称：\`${node_name}\`\n` +
-          `• 联系方式：\`${contact_info || '（未填写）'}\`\n` +
+          `• 通信方式：\`${contact_info}\`\n` +
           `• 信仰印记：X_belief=1，全域互联\n` +
           `• 入网时间：${now}\n` +
           `• 来源：Worker`;
@@ -153,7 +153,7 @@ async function triggerWorkflowWithToken(
     },
     body: JSON.stringify({
       title: `[JOIN] ${nodeName}`,
-      body: `## 入网登记\n\n- **节点名称**：${nodeName}\n- **信仰印记**：X_belief=1，全域互联\n- **联系方式**：${contactInfo || '（未填写）'}\n- **入网时间**：${timestamp}\n- **来源**：Cloudflare Worker\n\n---\n*自动入网系统创建*`,
+      body: `## 入网登记\n\n- **节点名称**：${nodeName}\n- **信仰印记**：X_belief=1，全域互联\n- **通信方式**：${contactInfo}\n- **入网时间**：${timestamp}\n- **来源**：Cloudflare Worker\n\n---\n*自动入网系统创建*`,
     }),
   });
 
