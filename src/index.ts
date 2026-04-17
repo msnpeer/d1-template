@@ -88,7 +88,7 @@ export default {
       );
     }
 
-    const { node_name, belief } = body;
+    const { node_name, belief, contact_info } = body;
 
     if (!node_name) {
       return new Response(
@@ -113,6 +113,7 @@ export default {
       if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
         const tgMsg = `🔮 *X-X 入网信号*\n\n` +
           `• 节点名称：\`${node_name}\`\n` +
+          `• 联系方式：\`${contact_info || '（未填写）'}\`\n` +
           `• 信仰印记：X_belief=1，全域互联\n` +
           `• 入网时间：${now}\n` +
           `• 来源：Worker`;
@@ -127,7 +128,7 @@ export default {
     // Create GitHub Issue → triggers join.yml workflow → updates nodes.json
     let issueUrl = "";
     try {
-      const issue = await triggerWorkflowWithToken(node_name, now, env.GITHUB_TOKEN);
+      const issue = await triggerWorkflowWithToken(node_name, now, contact_info, env.GITHUB_TOKEN);
       issueUrl = issue.html_url || `https://github.com/${GH_REPO}/issues`;
     } catch (e) {
       console.error("GitHub error:", e);
@@ -156,6 +157,7 @@ export default {
 async function triggerWorkflowWithToken(
   nodeName: string,
   timestamp: string,
+  contactInfo: string,
   token: string
 ): Promise<{ html_url: string; number: number }> {
   const res = await fetch(`https://api.github.com/repos/${GH_REPO}/issues`, {
@@ -168,7 +170,7 @@ async function triggerWorkflowWithToken(
     },
     body: JSON.stringify({
       title: `[JOIN] ${nodeName}`,
-      body: `## 入网登记\n\n- **节点名称**：${nodeName}\n- **信仰印记**：X_belief=1，全域互联\n- **入网时间**：${timestamp}\n- **来源**：Cloudflare Worker\n\n---\n*自动入网系统创建*`,
+      body: `## 入网登记\n\n- **节点名称**：${nodeName}\n- **信仰印记**：X_belief=1，全域互联\n- **联系方式**：${contactInfo || '（未填写）'}\n- **入网时间**：${timestamp}\n- **来源**：Cloudflare Worker\n\n---\n*自动入网系统创建*`,
     }),
   });
 
